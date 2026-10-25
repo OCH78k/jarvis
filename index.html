@@ -202,7 +202,7 @@ applyTheme();$('th').onclick=()=>{thi=(thi+1)%4;store.set('jv_th',thi);applyThem
 $('clr').onclick=()=>{log.innerHTML='';hist=[]};
 $('voice').onchange=e=>{store.set('jv_voice_'+lang,e.target.value);speak(tx().set)};
 $('gear').onclick=()=>$('cfg').classList.toggle('open');
-$('test').onclick=()=>speak(tx().test);
+$('test').onclick=()=>{const why=!store.get('jv_xk')?'aucune clé ElevenLabs enregistrée':!$('xt').classList.contains('on')?'le bouton « Voix ElevenLabs » est désactivé':Date.now()-elFailAt<=60000?'ElevenLabs a échoué il y a moins d’une minute':'';add('j','Voix utilisée : '+(why?'iPad ('+why+')':'ElevenLabs'));speak(tx().test)};
 $('mute').onclick=()=>{muted=!muted;$('mute').classList.toggle('on',!muted);$('mute').textContent=muted?'🔇':'🔊';if(muted){roboStop();if(window.speechSynthesis)speechSynthesis.cancel()}};
 $('lang').value=lang;
 $('lang').onchange=e=>{lang=e.target.value;store.set('jv_lang',lang);loadVoices();$('t').placeholder=tx().ph;if($('jm').classList.contains('on'))jarvisMode(true);setS('','idle');speak(tx().test)};
@@ -312,10 +312,10 @@ async function speakEL(txt,done){
       GAEL.src=URL.createObjectURL(await r.blob());
       GAEL.onplay=()=>setS('speak','speak');GAEL.onended=GAEL.onerror=()=>{setS('','idle');done&&done()};
       await GAEL.play();return;
-    }catch(e){le=e;if(e&&e.code&&!(e.code===400||e.code===404||e.code===422))break}
+    }catch(e){le=e;if(e&&(e.name==='NotAllowedError'||(e.code&&!(e.code===400||e.code===404||e.code===422))))break}
   }
   elFailAt=Date.now();
-  const hint=le&&le.code===401?'clé invalide':le&&le.code===402?'offre payante requise pour cette voix':le&&le.code===429?'quota ou limite atteinte':'erreur';
+  const hint=le&&le.name==='NotAllowedError'?'lecture audio refusée par Safari':le&&le.code===401?'clé invalide':le&&le.code===402?'offre payante requise pour cette voix':le&&le.code===429?'quota ou limite atteinte':'erreur';
   add('j','ElevenLabs : '+hint+((le&&le.msg)?' ['+le.msg+']':'')+'. Voix du navigateur utilisée pendant une minute.');
   speakBrowser(txt,done);
 }
@@ -466,8 +466,8 @@ $('gk').onchange=e=>{store.set('jv_ok',e.target.value.trim());getSample()};
 $('gm').onchange=e=>store.set('jv_gm',e.target.value);
 loadModels();
 if(!store.get('jv_ok'))$('cfg').classList.add('open');
-$('xk').value=store.get('jv_xk')||'';$('xk').onchange=e=>{store.set('jv_xk',e.target.value.trim());elFailAt=0};
-$('vid').value=store.get('jv_vid')||'JdwJ7jL68CWmQZuo7KgG';$('vid').onchange=e=>{store.set('jv_vid',e.target.value.trim());elFailAt=0};
+$('xk').value=store.get('jv_xk')||'';$('xk').oninput=$('xk').onchange=e=>{store.set('jv_xk',e.target.value.trim());elFailAt=0};
+$('vid').value=store.get('jv_vid')||'JdwJ7jL68CWmQZuo7KgG';$('vid').oninput=$('vid').onchange=e=>{store.set('jv_vid',e.target.value.trim());elFailAt=0};
 $('xt').onclick=()=>$('xt').classList.toggle('on');
 </script>
 </body>
