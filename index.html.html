@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>J.A.R.V.I.S. (OpenRouter)</title>
+<style>
+:root{--bg:#02080e;--fg:#d6f6ff;--dim:#5f9db3;--c:#35e0ff;--panel:#06161f;--line:#0f4258;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(ellipse at 50% 35%,#0b3248 0%,var(--bg) 68%);color:var(--fg);font-family:"Segoe UI",system-ui,Helvetica,Arial,sans-serif;display:flex;flex-direction:column;align-items:center;overflow:hidden;position:relative}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background:linear-gradient(#35e0ff0a 1px,transparent 1px) 0 0/100% 4px,linear-gradient(90deg,#35e0ff0d 1px,transparent 1px) 0 0/48px 100%;z-index:0}
+body>*{position:relative;z-index:1}
+#top{width:min(900px,100%);display:flex;justify-content:space-between;align-items:center;padding:12px 16px 4px;flex:none}
+#top b{letter-spacing:.45em;font-size:14px;color:var(--c);text-shadow:0 0 12px var(--c)}
+#clk{text-align:right;font-size:20px;color:var(--fg);font-variant-numeric:tabular-nums;letter-spacing:.08em;line-height:1}
+#clk small{display:block;font-size:10px;color:var(--dim);letter-spacing:.15em;text-transform:uppercase;margin-top:3px}
+#chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:4px 12px;flex:none}
+.chip{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);border:1px solid var(--line);border-radius:4px;padding:3px 8px;background:#06161fcc}
+.chip i{font-style:normal;color:var(--c)}
+#hud{position:relative;width:min(38vh,360px);aspect-ratio:1;margin:6px 0 0;flex:none;cursor:pointer;filter:drop-shadow(0 0 16px #35e0ff66)}
+#hud svg{width:100%;height:100%;overflow:visible;position:relative;z-index:1}
+#hud g{transform-box:fill-box;transform-origin:center}
+.a1{animation:spin 40s linear infinite}.a2{animation:spin 18s linear infinite reverse}.a3{animation:spin 9s linear infinite}.a4{animation:spin 5s linear infinite reverse}
+#hud.listen{--c:#7dff9e;filter:drop-shadow(0 0 20px #7dff9e88)}
+#hud.think .a3,#hud.think .a4{animation-duration:1.2s}
+#hud.speak .a2{animation-duration:6s}#hud.speak .a4{animation-duration:1.5s}
+#hud.speak{filter:drop-shadow(0 0 30px #35e0ffcc)}
+#core{animation:pulse 2.6s ease-in-out infinite}
+#hud.speak #core,#hud.listen #core{animation-duration:.5s}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{50%{transform:scale(1.12);opacity:.75}}
+#wave{display:flex;gap:3px;align-items:center;height:42px;flex:none}
+#wave i{width:4px;height:4px;border-radius:2px;background:var(--c);box-shadow:0 0 6px var(--c);display:block}
+#status{font-size:12px;color:var(--c);letter-spacing:.3em;text-transform:uppercase;min-height:16px;flex:none;text-shadow:0 0 8px var(--c)}
+#log{flex:1;min-height:0;width:min(720px,100%);overflow-y:auto;padding:10px 16px;display:flex;flex-direction:column;gap:10px}
+.m{max-width:88%;padding:9px 13px;border:1px solid var(--line);border-radius:4px 14px 14px 14px;background:#06161fdd;font-size:15px;line-height:1.45;white-space:pre-wrap}
+.m.u{align-self:flex-end;color:var(--dim);border-radius:14px 4px 14px 14px}
+.m.j{align-self:flex-start;border-color:var(--c);box-shadow:0 0 12px #35e0ff33}
+#cfg{display:none;width:min(720px,calc(100% - 24px));flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:10px;background:#06161ff2;padding:10px;margin:0 12px 4px;font-size:12px;color:var(--dim);flex:none}
+#cfg.open{display:flex}
+#cfg input:not([type=range]){background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;width:150px}
+select,input[type=range]{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px;font-size:13px;max-width:100%}
+input[type=range]{padding:0;width:80px;accent-color:var(--c)}
+form{display:flex;gap:8px;width:min(720px,100%);padding:8px 16px 14px;flex:none;z-index:5}
+#t{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--fg);padding:12px;border-radius:10px;font-size:16px;outline:none;min-width:0}
+#t:focus{border-color:var(--c)}
+button{background:var(--panel);color:var(--c);border:1px solid var(--c);border-radius:10px;padding:8px 14px;font-size:14px;cursor:pointer;min-height:44px;min-width:44px;touch-action:manipulation}
+button.on{background:var(--c);color:#02080e}
+.cn{position:fixed;width:30px;height:30px;border:2px solid var(--c);opacity:.65;pointer-events:none;z-index:2;box-shadow:0 0 8px var(--c)}
+.cn.a{top:calc(8px + env(safe-area-inset-top,0px));left:8px;border-right:0;border-bottom:0}
+.cn.b{top:calc(8px + env(safe-area-inset-top,0px));right:8px;border-left:0;border-bottom:0}
+.cn.c{bottom:calc(8px + env(safe-area-inset-bottom,0px));left:8px;border-right:0;border-top:0}
+.cn.d{bottom:calc(8px + env(safe-area-inset-bottom,0px));right:8px;border-left:0;border-top:0}
+#hud::before{content:"";position:absolute;inset:-7%;border-radius:50%;z-index:0;background:conic-gradient(from 0deg,transparent 0 290deg,color-mix(in srgb,var(--c) 45%,transparent) 360deg);-webkit-mask:radial-gradient(circle,transparent 62%,#000 63%);mask:radial-gradient(circle,transparent 62%,#000 63%);animation:spin 4.5s linear infinite;opacity:.7}
+#hud.think::before{animation-duration:1.4s}
+.side{display:none;position:fixed;top:96px;width:170px;font-size:11px;letter-spacing:.1em;color:var(--dim);border:1px solid var(--line);background:#06161fcc;padding:10px 12px;border-radius:4px;z-index:2}
+.side.l{left:max(18px,env(safe-area-inset-left,0px))}.side.r{right:max(18px,env(safe-area-inset-right,0px))}
+.side h4{margin:0 0 8px;color:var(--c);font-size:11px;letter-spacing:.3em;text-shadow:0 0 8px var(--c)}
+.side .row{display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px solid #0f425855;text-transform:uppercase}
+.side b{color:var(--fg);font-weight:500;text-align:right}
+.bar{height:4px;background:var(--line);margin:6px 0}.bar i{display:block;height:100%;width:0;background:var(--c);box-shadow:0 0 6px var(--c)}
+@media(min-width:980px){.side{display:block}#log,form,#cfg{width:min(620px,100%)}}
+#boot{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:20;padding:24px}
+#boot pre{margin:0;color:var(--dim);font-size:12px;line-height:1.7;min-height:96px;font-family:ui-monospace,Consolas,monospace}
+#boot button{font-size:17px;letter-spacing:.35em;padding:14px 26px}
+</style>
+</head>
+<body>
+<div id="boot"><b style="letter-spacing:.5em;color:var(--c)">J.A.R.V.I.S.</b><pre id="bl"></pre><button id="go">INITIALISER</button></div>
+<div class="cn a"></div><div class="cn b"></div><div class="cn c"></div><div class="cn d"></div>
+<aside class="side l"><h4>SYSTÈME</h4><div class="row"><span>Batterie</span><b id="s_bat">—</b></div><div class="bar"><i id="sb"></i></div><div class="row"><span>Réseau</span><b id="s_net">—</b></div><div class="row"><span>Cerveau IA</span><b id="s_ai">—</b></div><div class="row"><span>Voix</span><b id="s_v">—</b></div>
+<h4 style="margin-top:14px">RESSOURCES</h4>
+<div class="row"><span>Charge (est.)</span><b id="r_cpu">—</b></div><div class="bar"><i id="r_cpub"></i></div>
+<div class="row"><span>Mémoire</span><b id="r_mem">—</b></div><div class="bar"><i id="r_memb"></i></div>
+<div class="row"><span>Stockage</span><b id="r_sto">—</b></div><div class="bar"><i id="r_stob"></i></div>
+<div class="row"><span>Images/s</span><b id="r_fps">—</b></div>
+<div class="row"><span>Débit</span><b id="r_net">—</b></div></aside>
+<aside class="side r"><h4>ACTIVITÉ</h4><div class="row"><span>Session</span><b id="s_up">00:00</b></div><div class="row"><span>Échanges</span><b id="s_ex">0</b></div><div class="row"><span>Latence</span><b id="s_lat">—</b></div><div class="row"><span>Mode</span><b id="s_mod">—</b></div><div class="row"><span>Langue</span><b id="s_lg">—</b></div><div class="row"><span>Mémoire</span><b id="s_mem">0</b></div></aside>
+<div id="top"><b>J.A.R.V.I.S.</b><div id="clk">--:--<small id="dt"></small></div></div>
+<div id="chips"><span class="chip">IA <i id="c1">…</i></span><span class="chip">Réseau <i id="c2">…</i></span><span class="chip">Batterie <i id="c3">n/a</i></span><span class="chip">Cœurs <i id="c4">…</i></span><span class="chip">Voix <i id="c5">…</i></span></div>
+<div id="hud" title="Cliquez pour parler">
+<svg viewBox="0 0 400 400">
+<defs><radialGradient id="g"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="var(--c)"/><stop offset="1" stop-color="var(--c)" stop-opacity="0"/></radialGradient></defs>
+<g class="a1"><circle cx="200" cy="200" r="192" fill="none" stroke="var(--c)" stroke-width="3" stroke-dasharray="2 9" opacity=".8"/></g>
+<g class="a2"><circle cx="200" cy="200" r="172" fill="none" stroke="var(--c)" stroke-width="6" stroke-dasharray="90 30 20 30" opacity=".9"/></g>
+<circle cx="200" cy="200" r="150" fill="none" stroke="var(--c)" stroke-width="1.5" opacity=".7"/>
+<g class="a3"><circle cx="200" cy="200" r="130" fill="none" stroke="var(--c)" stroke-width="10" stroke-dasharray="180 637" opacity=".85"/><circle cx="200" cy="200" r="130" fill="none" stroke="var(--c)" stroke-width="10" stroke-dasharray="180 637" stroke-dashoffset="-408" opacity=".85"/></g>
+<g class="a4"><circle cx="200" cy="200" r="104" fill="none" stroke="var(--c)" stroke-width="3" stroke-dasharray="1 6" opacity=".9"/></g>
+<g class="a1"><path d="M200 -10 L208 6 L192 6Z M200 410 L208 394 L192 394Z M-10 200 L6 208 L6 192Z M410 200 L394 208 L394 192Z" fill="var(--c)"/></g>
+<g class="a2"><circle cx="200" cy="200" r="118" fill="none" stroke="var(--c)" stroke-width="1.5" stroke-dasharray="40 12" opacity=".6"/><circle cx="200" cy="200" r="160" fill="none" stroke="var(--c)" stroke-width="1" stroke-dasharray="1 3" opacity=".7"/></g>
+<circle cx="200" cy="200" r="84" fill="#02080e" stroke="var(--c)" stroke-width="2"/>
+<circle id="core" cx="200" cy="200" r="70" fill="url(#g)"/>
+</svg></div>
+<div id="wave"></div>
+<div id="status">En veille</div>
+<div id="log"></div>
+<div id="cfg">
+<button type="button" id="mute" class="on" title="Voix activée">🔊</button>
+<select id="lang"><option value="fr">Français</option><option value="en">English (British)</option></select>
+<button type="button" id="jm" class="on">Mode Jarvis</button>
+<button type="button" id="exp" style="display:none" title="Raisonnement approfondi (plus lent, plus précis)">Mode expert</button>
+<button type="button" id="th" title="Couleur">◐ Couleur</button>
+<button type="button" id="clr" title="Effacer la conversation">🗑 Effacer</button>
+<select id="voice" aria-label="Voix"></select>
+<label>Vitesse <input type="range" id="rate" min=".7" max="1.4" step=".05" value=".95"></label>
+<label>Grave <input type="range" id="pitch" min=".5" max="1.4" step=".05" value=".8"></label>
+<input id="gk" type="password" placeholder="Clé API OpenRouter" autocomplete="off">
+<select id="gm" title="Modèle gratuit"></select>
+<span style="flex-basis:100%;text-align:center">La clé reste sur votre appareil. Modèles gratuits : 20 demandes/min et 50/jour. Évitez les informations sensibles.</span>
+<button type="button" id="test">Tester</button>
+</div>
+<form id="f">
+<button type="button" id="gear" title="Réglages voix">⚙</button>
+<input id="t" placeholder="Écrivez ou cliquez sur le réacteur pour parler…" autocomplete="off">
+<button type="button" id="mic">🎤</button>
+<button type="button" id="conv" title="Conversation continue">∞</button>
+<button>OK</button>
+</form>
+<script>
+const $=id=>document.getElementById(id), hud=$('hud'), log=$('log'), st=$('status');
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const T={
+ fr:{loc:'fr-FR',sys:"Tu es J.A.R.V.I.S., l’assistant IA élégant, loyal et légèrement pince-sans-rire de l’utilisateur, à la manière du film Iron Man. Tu l’appelles « Monsieur » (ou « Madame » s’il l’indique). Réponds en français, de façon brève (1 à 3 phrases), sans markdown ni émojis, car tes réponses sont lues à voix haute.",
+  ph:'Écrivez ou cliquez sur le réacteur pour parler…',idle:'En veille',listen:'Je vous écoute…',think:'Réflexion…',speak:'Parle…',
+  hi:h=>(h<6||h>=18?'Bonsoir':'Bonjour')+' Monsieur. Tous les systèmes sont en ligne. Que puis-je faire pour vous ?',
+  nobrain:'Systèmes en ligne. La connexion à mon cerveau IA est indisponible, mais je gère les commandes locales.',
+  off:'Clé OpenRouter manquante, Monsieur. Ouvrez les réglages ⚙ et collez votre clé.',err:'Une erreur est survenue, Monsieur. Veuillez réessayer.',deny:'Autorisation refusée, Monsieur.',
+  nosr:'La reconnaissance vocale n’est pas prise en charge ici. Utilisez Chrome, Edge ou Safari, ou écrivez-moi.',
+  mic:'Le navigateur bloque le micro dans cette fenêtre, Monsieur. Touchez la zone de texte et utilisez le micro de votre clavier pour dicter : je vous répondrai à voix haute.',nosp:'Je n’ai rien entendu. Réessayez.',
+  test:'Bonjour Monsieur. Tous les systèmes fonctionnent parfaitement.',set:'Voix sélectionnée. Je suis à votre service.',
+  time:t=>'Il est '+t+'.',date:d=>'Nous sommes le '+d+'.',tdone:(v,u)=>'Monsieur, votre minuteur de '+v+' '+u+' est terminé.',tset:(v,u)=>'Minuteur de '+v+' '+u+' lancé.',calc:r=>'Cela fait '+r+'.'},
+ en:{loc:'en-GB',sys:"You are J.A.R.V.I.S., the refined, loyal and dryly witty AI butler from Iron Man. Address the user as 'sir' (or 'madam' if told). Reply in English, in 1 to 3 short sentences, with no markdown or emojis, because your replies are spoken aloud.",
+  ph:'Type, or click the reactor to speak…',idle:'Standing by',listen:'Listening…',think:'Thinking…',speak:'Speaking…',
+  hi:h=>(h<12?'Good morning':h<18?'Good afternoon':'Good evening')+', sir. All systems are online. How may I assist you?',
+  nobrain:'Systems online. My AI core is unavailable, but I can handle local commands.',
+  off:'OpenRouter key missing, sir. Open the settings ⚙ and paste your key.',err:'An error has occurred, sir. Please try again.',deny:'Permission denied, sir.',
+  nosr:'Speech recognition is not supported here. Please use Chrome, Edge or Safari, or type to me.',
+  mic:'The browser blocks the microphone in this window, sir. Tap the text box and use your keyboard’s microphone to dictate: I will answer aloud.',nosp:'I did not catch that. Please try again.',
+  test:'Good evening, sir. All systems are functioning perfectly.',set:'Voice selected. At your service.',
+  time:t=>'It is '+t+', sir.',date:d=>'Today is '+d+'.',tdone:(v,u)=>'Sir, your '+v+' '+u+' timer has finished.',tset:(v,u)=>v+' '+u+' timer set.',calc:r=>'That makes '+r+'.'}
+};
+let lang=store.get('jv_lang')||'fr', hist=[], sample=null, conv=false, listening=false, rec=null, busy=false, voices=[], muted=false, state='';
+const tx=()=>T[lang];
+const setS=(c,k)=>{state=c;hud.className=c;st.textContent=tx()[k]};
+const add=(cls,txt)=>{const d=document.createElement('div');d.className='m '+cls;d.textContent=txt;log.appendChild(d);log.scrollTop=log.scrollHeight;return d};
+
+/* Horloge + diagnostics */
+let nEx=0,lat=0;const T0=Date.now();
+function updSide(){const u=Math.floor((Date.now()-T0)/1000);let nm=0;try{nm=JSON.parse(store.get('jv_mem')||'[]').length}catch(e){}
+ $('s_up').textContent=String(Math.floor(u/60)).padStart(2,'0')+':'+String(u%60).padStart(2,'0');$('s_ex').textContent=nEx;$('s_lat').textContent=lat?lat+' ms':'—';
+ $('s_mod').textContent=$('exp').classList.contains('on')?'EXPERT':'RAPIDE';$('s_lg').textContent=lang.toUpperCase();$('s_mem').textContent=nm;
+ $('s_v').textContent=($('voice').value||'—').replace(/^(Microsoft|Google)\s*/,'').replace('__robot__','ROBOT').slice(0,14);
+ $('s_bat').textContent=$('c3').textContent;$('s_net').textContent=$('c2').textContent;$('s_ai').textContent=$('c1').textContent;
+ const b=parseInt($('c3').textContent);$('sb').style.width=(isNaN(b)?0:b)+'%'}
+function tick(){const n=new Date();$('clk').firstChild.nodeValue=n.toLocaleTimeString(tx().loc,{hour:'2-digit',minute:'2-digit',second:'2-digit'});$('dt').textContent=n.toLocaleDateString(tx().loc,{weekday:'short',day:'numeric',month:'short'});$('c2').textContent=navigator.onLine?'OK':'OFF';$('c1').textContent=sample?'OK':'OFF';updSide()}
+$('c4').textContent=navigator.hardwareConcurrency||'?';tick();setInterval(tick,1000);
+try{navigator.getBattery().then(b=>{const u=()=>$('c3').textContent=Math.round(b.level*100)+'%'+(b.charging?'⚡':'');u();b.onlevelchange=b.onchargingchange=u})}catch(e){}
+
+/* Ressources de l’appareil */
+let fr=0,fps=0,lt=performance.now(),sto='—',stoP=0;
+(function f(){fr++;requestAnimationFrame(f)})();
+const mb=x=>(x/1048576).toFixed(x>1e9?0:1);
+function est(){try{navigator.storage.estimate().then(e=>{stoP=e.quota?e.usage/e.quota*100:0;sto=mb(e.usage)+' Mo'})}catch(x){}}
+est();setInterval(est,10000);
+setInterval(()=>{const n=performance.now(),dt=n-lt;lt=n;fps=Math.round(fr*1000/dt);fr=0;const lag=Math.max(0,dt-1000);
+ const cpu=Math.min(100,Math.round(Math.max(0,1-fps/60)*100+lag/10));
+ $('r_cpu').textContent='~'+cpu+'%';$('r_cpub').style.width=cpu+'%';$('r_fps').textContent=fps;
+ let mp=0,mt='n/d';const pm=performance.memory;
+ if(pm){mp=pm.usedJSHeapSize/pm.jsHeapSizeLimit*100;mt=mb(pm.usedJSHeapSize)+' Mo'}else if(navigator.deviceMemory){mt='≥ '+navigator.deviceMemory+' Go'}
+ $('r_mem').textContent=mt;$('r_memb').style.width=mp+'%';
+ $('r_sto').textContent=sto;$('r_stob').style.width=Math.min(100,stoP)+'%';
+ const cn=navigator.connection;$('r_net').textContent=cn&&cn.downlink?cn.downlink+' Mb/s':(navigator.onLine?'en ligne':'hors ligne');
+},1000);
+/* Onde sonore */
+const wave=$('wave'),bars=[];for(let i=0;i<36;i++){const b=document.createElement('i');wave.appendChild(b);bars.push(b)}
+(function anim(t){const lv={speak:.95,listen:.6,think:.3}[state]||.06;
+ bars.forEach((b,i)=>{const e=1-Math.abs(i-17.5)/20;b.style.height=(4+lv*38*e*(.55+.45*Math.sin(t*.011+i*.7)*Math.sin(t*.005+i)))+'px'});requestAnimationFrame(anim)})(0);
+
+/* Voix */
+const Q=/neural|premium|enhanced|natural|online|siri/i,M=/daniel|ryan|george|arthur|oliver|james|thomas|henri|paul|claude|antoine|remy|rémy|male|homme/i;
+const score=v=>(Q.test(v.name)?4:0)+(/google/i.test(v.name)?2:0)+(M.test(v.name)?(lang==='en'?6:3):0)+(v.lang.replace('_','-')===tx().loc?(lang==='en'?4:1):0);
+function loadVoices(){
+  const all=window.speechSynthesis?speechSynthesis.getVoices():[];
+  voices=all.filter(v=>v.lang.toLowerCase().startsWith(lang)).sort((a,b)=>score(b)-score(a));
+  const sel=$('voice'),saved=store.get('jv_voice_'+lang);sel.innerHTML='';
+  if(!voices.length){sel.innerHTML='<option value="__robot__">🤖 Voix synthétique (robot)</option>';$('c5').textContent='RBT';return}
+  voices.forEach(v=>{const o=document.createElement('option');o.value=v.name;o.textContent=v.name.replace(/^(Microsoft|Google)\s*/,'$1 ')+' ('+v.lang+')';sel.appendChild(o)});
+  sel.insertAdjacentHTML('beforeend','<option value="__robot__">🤖 Voix synthétique (robot)</option>');sel.value=(saved==='__robot__'||voices.some(v=>v.name===saved))?saved:voices[0].name;$('c5').textContent=lang.toUpperCase();
+}
+if(window.speechSynthesis){loadVoices();speechSynthesis.onvoiceschanged=loadVoices}
+function jarvisMode(on){$('jm').classList.toggle('on',on);store.set('jv_jm',on?'1':'0');if(on){$('rate').value=.95;$('pitch').value=.8;if(voices[0]){$('voice').value=voices[0].name}}else{$('rate').value=1;$('pitch').value=1}}
+$('jm').onclick=()=>jarvisMode(!$('jm').classList.contains('on'));
+$('exp').onclick=()=>$('exp').classList.toggle('on');
+const THEMES=[['#35e0ff','#0f4258'],['#ffb340','#58400f'],['#ff5a4d','#581a15'],['#7dff9e','#14582a']];let thi=+store.get('jv_th')||0;
+function applyTheme(){const x=THEMES[thi%4],s=document.documentElement.style;s.setProperty('--c',x[0]);s.setProperty('--line',x[1])}
+applyTheme();$('th').onclick=()=>{thi=(thi+1)%4;store.set('jv_th',thi);applyTheme()};
+$('clr').onclick=()=>{log.innerHTML='';hist=[]};
+$('voice').onchange=e=>{store.set('jv_voice_'+lang,e.target.value);speak(tx().set)};
+$('gear').onclick=()=>$('cfg').classList.toggle('open');
+$('test').onclick=()=>speak(tx().test);
+$('mute').onclick=()=>{muted=!muted;$('mute').classList.toggle('on',!muted);$('mute').textContent=muted?'🔇':'🔊';if(muted){roboStop();if(window.speechSynthesis)speechSynthesis.cancel()}};
+$('lang').value=lang;
+$('lang').onchange=e=>{lang=e.target.value;store.set('jv_lang',lang);loadVoices();$('t').placeholder=tx().ph;if($('jm').classList.contains('on'))jarvisMode(true);setS('','idle');speak(tx().test)};
+$('t').placeholder=tx().ph;
+if(store.get('jv_jm')==='0')jarvisMode(false);
+
+function speak(txt,done){
+  if(muted){done&&done();return}
+  if($('voice').value==='__robot__')return roboSpeak(txt,done);
+  roboStop();
+  if(!window.speechSynthesis){done&&done();return}
+  speechSynthesis.cancel();
+  const parts=(txt.replace(/[*_#`]/g,'').match(/[^.!?…\n]+[.!?…]*/g)||[txt]).map(s=>s.trim()).filter(Boolean);
+  const voice=voices.find(v=>v.name===$('voice').value)||voices[0];
+  parts.forEach((p,i)=>{
+    const u=new SpeechSynthesisUtterance(p);
+    u.lang=tx().loc;u.rate=+$('rate').value||1;u.pitch=+$('pitch').value||1;
+    if(voice)u.voice=voice;
+    if(i===0)u.onstart=()=>setS('speak','speak');
+    if(i===parts.length-1)u.onend=u.onerror=()=>{setS('','idle');done&&done()};
+    speechSynthesis.speak(u);
+  });
+}
+
+/* Voix synthétique (robot) : synthèse à formants, 100 % générée dans la page */
+let RB=null;
+function roboStop(){if(RB){try{RB.osc.stop();RB.lfo.stop();RB.nz.stop()}catch(e){}try{RB.out.disconnect()}catch(e){}clearTimeout(RB.tm);RB=null}}
+const VW={a:[750,1300,2500],e:[400,2000,2600],E:[550,1800,2500],i:[280,2300,3000],o:[450,850,2500],u:[300,800,2300],y:[280,1800,2200],O:[400,1500,2300],'ə':[500,1500,2400],A:[700,1100,2500],N:[450,800,2400],I:[550,1700,2500],w:[300,800,2300]};
+const CS={s:[6500,.5,0,.11],z:[6000,.3,.5,.09,[400,1500,2500]],f:[4500,.3,0,.09],v:[4500,.2,.5,.08,[400,1400,2400]],S:[3200,.55,0,.11],j:[3000,.35,.5,.09,[400,1600,2400]],p:[800,.8,0,.08,0,1],t:[5000,.8,0,.08,0,1],k:[2000,.8,0,.09,0,1],b:[500,.3,.5,.07,[300,900,2200],1],d:[3000,.3,.5,.07,[300,1700,2500],1],g:[1500,.3,.5,.08,[300,1300,2300],1],m:[0,0,.7,.08,[250,1100,2300]],n:[0,0,.7,.08,[250,1500,2500]],l:[0,0,.75,.07,[350,1100,2700]],r:[1200,.15,.7,.07,[450,1300,1700]]};
+const G2={eau:'o',aux:'o',au:'o',ou:'u',oi:'wa',ai:'E',ei:'E',eu:'O',oe:'O',ch:'S',gn:'n',ph:'f',qu:'k',gu:'g',ç:'s',é:'e',è:'E',ê:'E',ë:'E',à:'a',â:'a',ä:'a',ô:'o',ö:'o',û:'y',ù:'y',ü:'y',î:'i',ï:'i',œ:'O'};
+const L1={a:'a',b:'b',d:'d',f:'f',i:'i',j:'j',k:'k',l:'l',m:'m',n:'n',o:'o',p:'p',q:'k',r:'r',t:'t',u:'y',v:'v',w:'v',y:'i',z:'z'};
+function g2p(w){
+  w=w.replace(/['’]/g,'');
+  if(w.length>3)w=w.replace(/(es|e|s|t|d|x|z|p)$/,'');
+  const o=[],V=/[aeiouyàâäéèêëîïôöùûüœ]/;
+  for(let i=0;i<w.length;){
+    const a=w.substr(i,3),b=w.substr(i,2),c=w[i],nx=w[i+1]||'',n=w[i+2]||'';
+    const nas=(b==='an'||b==='am'||b==='en'||b==='em')?'A':(b==='on'||b==='om')?'N':/^(in|im|un|um)$/.test(b)?'I':null;
+    if(a==='ain'||a==='ein'){o.push('I');i+=3}
+    else if(nas&&!V.test(n)&&n!=='n'&&n!=='m'){o.push(nas);i+=2}
+    else if(G2[a]){o.push(...G2[a]);i+=3}
+    else if(G2[b]){o.push(...G2[b]);i+=2}
+    else if(G2[c]){o.push(...G2[c]);i++}
+    else if(c==='c'){o.push(/[eiyéèê]/.test(nx)?'s':'k');i++}
+    else if(c==='g'){o.push(/[eiyéèê]/.test(nx)?'j':'g');i++}
+    else if(c==='s'){o.push(V.test(w[i-1]||'')&&V.test(nx)?'z':'s');i++}
+    else if(c==='x'){o.push('k','s');i++}
+    else if(c==='e'){o.push(nx==='r'&&n===''?'e':(/[^aeiouy]/.test(nx)&&/[^aeiouy]/.test(n))?'E':'ə');i++}
+    else if(c==='h'){i++}
+    else{if(L1[c])o.push(L1[c]);i++}
+  }
+  return o;
+}
+function roboSpeak(txt,done){
+  roboStop();
+  const AC=window.AudioContext||window.webkitAudioContext;
+  if(!AC){done&&done();return}
+  window.__ac=window.__ac||new AC();const c=window.__ac;c.resume();
+  const out=c.createGain();out.gain.value=.9;out.connect(c.destination);
+  const ring=c.createGain();ring.gain.value=.7;ring.connect(out);
+  const lfo=c.createOscillator();lfo.frequency.value=55;const lg=c.createGain();lg.gain.value=.3;lfo.connect(lg);lg.connect(ring.gain);
+  const osc=c.createOscillator();osc.type='sawtooth';const vg=c.createGain();vg.gain.value=0;osc.connect(vg);
+  const F=[8,10,12].map((q,k)=>{const f=c.createBiquadFilter();f.type='bandpass';f.Q.value=q;const g=c.createGain();g.gain.value=[3,2,1.2][k];vg.connect(f);f.connect(g);g.connect(ring);return f});
+  const nb=c.createBuffer(1,c.sampleRate,c.sampleRate),dd=nb.getChannelData(0);for(let i=0;i<dd.length;i++)dd[i]=Math.random()*2-1;
+  const nz=c.createBufferSource();nz.buffer=nb;nz.loop=true;const nf=c.createBiquadFilter();nf.type='bandpass';nf.Q.value=1.5;const ng=c.createGain();ng.gain.value=0;nz.connect(nf);nf.connect(ng);ng.connect(ring);
+  osc.start();lfo.start();nz.start();
+  const rate=+$('rate').value||1,f0=Math.max(60,115*(+$('pitch').value||1));
+  const at=(p,v,x,tc)=>p.setTargetAtTime(v,x,tc||.012);
+  const sents=txt.match(/[^.!?…,;:\n]+[.!?…,;:]*/g)||[txt];
+  let t=c.currentTime+.08;
+  for(const s of sents){
+    const q=/[?]/.test(s),words=s.toLowerCase().match(/[a-zàâäéèêëîïôöùûüçœ'’]+/g)||[];
+    words.forEach((w,wi)=>{
+      const ph=g2p(w);
+      ph.forEach((p,pi)=>{
+        const last=pi===ph.length-1,prog=(wi+pi/Math.max(1,ph.length))/Math.max(1,words.length);
+        at(osc.frequency,f0*(q?1+.3*prog:1-.14*prog)*(last?1.03:1),t,.03);
+        const v=VW[p];
+        if(v){const du=(p==='ə'?.07:.12)/rate*(last?1.3:1);v.forEach((x,k)=>at(F[k].frequency,x,t,.02));at(vg.gain,1,t,.01);at(ng.gain,0,t,.005);t+=du}
+        else{const k=CS[p];if(!k)return;const du=k[3]/rate;
+          if(k[4])k[4].forEach((x,j)=>at(F[j].frequency,x,t,.015));
+          at(vg.gain,k[2],t,.01);nf.frequency.setValueAtTime(k[0]||1000,t);
+          if(k[5]){at(ng.gain,0,t,.004);at(ng.gain,k[1],t+du*.5,.004);at(ng.gain,0,t+du*.85,.01)}else at(ng.gain,k[1],t,.008);
+          t+=du}
+      });
+      t+=.06/rate;
+    });
+    t+=(/[.!?…]/.test(s)?.35:.15)/rate;
+  }
+  at(vg.gain,0,t,.02);at(ng.gain,0,t,.02);
+  setS('speak','speak');
+  RB={osc,lfo,nz,out,tm:setTimeout(()=>{roboStop();setS('','idle');done&&done()},(t-c.currentTime)*1000+250)};
+}
+/* Démarrage */
+const bootLines=['> NOYAU … OK','> SYNTHÈSE VOCALE … OK','> RÉACTEUR ARC … STABLE','> J.A.R.V.I.S. PRÊT'];let bi=0;
+const bt=setInterval(()=>{$('bl').textContent+=(bi?'\n':'')+bootLines[bi++];if(bi>=bootLines.length)clearInterval(bt)},450);
+$('go').onclick=()=>{$('boot').remove();const g=tx().hi(new Date().getHours());add('j',g);speak(g)};
+
+/* Cerveau */
+const OB='https://openrouter.ai/api/v1/';
+let OM=[];
+async function ofetch(path,body){
+  const r=await fetch(OB+path,{method:body?'POST':'GET',headers:{'content-type':'application/json','authorization':'Bearer '+(store.get('jv_ok')||''),'x-title':'Jarvis'},body:body?JSON.stringify(body):undefined});
+  if(!r.ok){let m='';try{m=(await r.json()).error.message}catch(e){}throw {code:'http_'+r.status,msg:r.status+' '+String(m).slice(0,160)}}
+  return r.json();
+}
+const textM=()=>OM.filter(m=>m.out.length===1&&m.out[0]==='text'&&m.inp.includes('text')).sort((a,b)=>(b.tools-a.tools)||(b.created-a.created));
+const pickText=()=>{const t=textM();return t.length?t[0].id:''};
+function fillModels(){const sel=$('gm'),t=textM(),sv=store.get('jv_gm');sel.innerHTML=t.map(m=>'<option value="'+m.id+'">'+m.id.replace(':free','')+(m.tools?'':' (sans outils)')+'</option>').join('');sel.value=t.some(m=>m.id===sv)?sv:pickText()}
+async function loadModels(){
+  try{const r=await fetch(OB+'models'),d=await r.json();
+    OM=(d.data||[]).filter(m=>m.pricing&&+m.pricing.prompt===0&&+m.pricing.completion===0&&(!m.expiration_date||new Date(m.expiration_date)>Date.now()+6048e5)).map(m=>({id:m.id,tools:(m.supported_parameters||[]).includes('tools'),created:m.created||0,out:(m.architecture&&m.architecture.output_modalities)||['text'],inp:(m.architecture&&m.architecture.input_modalities)||['text']}));
+    fillModels();$('c5').textContent=OM.length+' modèles'}
+  catch(e){add('j','Impossible de lister les modèles gratuits ('+(e.msg||'réseau')+').')}
+}
+async function orAsk(msgs,o){
+  if(!store.get('jv_ok'))throw {code:'nokey'};
+  if(!OM.length)await loadModels();
+  const first=$('gm').value||pickText(),order=[first,...textM().map(m=>m.id).filter(id=>id!==first)].slice(0,3).filter(Boolean);
+  if(!order.length)throw {code:'nomodel',msg:'aucun modèle gratuit trouvé'};
+  const tl=(o.tools||[]).map(t=>{const p=t.inputSchema,has=p&&p.properties&&Object.keys(p.properties).length;return {type:'function',function:{name:t.name,description:t.description,parameters:has?{type:'object',properties:p.properties,required:p.required||[]}:{type:'object',properties:{}}}}});
+  let lastErr;
+  for(const id of order){
+    const mi=OM.find(m=>m.id===id),useTools=mi&&mi.tools&&tl.length;
+    const body=mm=>Object.assign({model:id,messages:mm,max_tokens:700},useTools?{tools:tl}:{});
+    try{
+      const m=msgs.map(x=>({role:x.role,content:x.content}));
+      for(let k=0;k<4;k++){
+        const d=await ofetch('chat/completions',body(m));
+        const msg=d.choices&&d.choices[0]&&d.choices[0].message;
+        if(!msg)throw {code:'empty',msg:'réponse vide'};
+        const calls=msg.tool_calls||[];
+        if(!calls.length){const text=(msg.content||'').replace(/<think>[\s\S]*?<\/think>/g,'').trim();if(!text)throw {code:'empty',msg:'réponse vide ('+id+')'};o.onText&&o.onText({text});return {text}}
+        m.push(msg);
+        for(const c of calls){let out;try{out=String(await o.tools.find(t=>t.name===c.function.name).execute(JSON.parse(c.function.arguments||'{}')))}catch(e){out='error: '+e.message}m.push({role:'tool',tool_call_id:c.id,content:out})}
+      }
+      throw {code:'loop',msg:'trop d’appels d’outils'};
+    }catch(e){lastErr=e;if(/^http_(401|402|429)/.test(e.code))throw e}
+  }
+  throw lastErr;
+}
+async function getSample(){sample=store.get('jv_ok')?orAsk:null;return sample}
+getSample();
+async function genImage(prompt){
+  if(!OM.length)await loadModels();
+  const im=OM.find(m=>m.out.includes('image'));
+  if(!im)throw {msg:'aucun modèle d’image gratuit disponible actuellement'};
+  const d=await ofetch('chat/completions',{model:im.id,messages:[{role:'user',content:prompt}],modalities:['image','text']});
+  const msg=d.choices[0].message,x=msg.images&&msg.images[0],url=x&&((x.image_url&&x.image_url.url)||x.url);
+  if(!url)throw {msg:'aucune image reçue'};return url;
+}
+
+const JK={fr:['Pourquoi les plongeurs plongent-ils toujours en arrière ? Parce que sinon ils tombent dans le bateau.','J’ai un excellent sens de l’humour. Il est simplement en mode silencieux.','Deux photons entrent dans un bar. On ne les sert pas : ils n’ont pas de masse.'],en:['I have an excellent sense of humour, sir. It is merely in silent mode.','Two photons walk into a bar. They are refused service: they have no mass.','Why do divers always fall backwards off the boat? Because otherwise they would fall into it.']};
+function convertU(q){
+  const m=q.match(/([\d.,]+)\s*([a-z°]+)\s+(?:en|vers|to|in)\s+([a-z°]+)/i);if(!m)return null;
+  const v=parseFloat(m[1].replace(',','.')),a=m[2].toLowerCase(),b=m[3].toLowerCase();
+  const len={m:1,metre:1,metres:1,meter:1,meters:1,km:1000,cm:.01,mm:.001,mi:1609.344,mile:1609.344,miles:1609.344,ft:.3048,pied:.3048,pieds:.3048,feet:.3048,foot:.3048};
+  const nf=x=>String(Number(x.toPrecision(8))).replace('.',lang==='fr'?',':'.'),pre=lang==='fr'?'Cela fait ':'That is ';
+  if(len[a]&&len[b])return pre+nf(v*len[a]/len[b])+' '+b+'.';
+  const TU=['c','f','k','celsius','fahrenheit','kelvin'],tk=u=>u[0];
+  if(TU.includes(a)&&TU.includes(b)){let c=v;if(tk(a)==='f')c=(v-32)*5/9;if(tk(a)==='k')c=v-273.15;let o=c;if(tk(b)==='f')o=c*9/5+32;if(tk(b)==='k')o=c+273.15;return pre+nf(o)+' '+(lang==='fr'?'degrés ':'degrees ')+({f:'Fahrenheit',k:'Kelvin',c:'Celsius'})[tk(b)]+'.'}
+  return null;
+}
+function local(q){
+  const s=q.toLowerCase(),n=new Date(),L=tx();
+  if(/^(aide|help|commandes|commands)\b/.test(s))return lang==='fr'?'Je gère l’heure, la date, les minuteurs, les calculs, les conversions, les blagues, pile ou face, et vos questions générales grâce à mon noyau.':'I handle time, date, timers, calculations, conversions, jokes, coin flips, and general questions through my core.';
+  if(/blague|joke/.test(s))return JK[lang][Math.floor(Math.random()*3)];
+  if(/pile ou face|coin|heads or tails/.test(s))return lang==='fr'?(Math.random()<.5?'Pile.':'Face.'):(Math.random()<.5?'Heads.':'Tails.');
+  const cvt=convertU(s);if(cvt)return cvt;
+  if(/quelle heure|l.heure|what time/.test(s))return L.time(n.toLocaleTimeString(L.loc,{hour:'2-digit',minute:'2-digit'}));
+  if(/quel jour|la date|on est quel|what day|the date/.test(s))return L.date(n.toLocaleDateString(L.loc,{weekday:'long',day:'numeric',month:'long',year:'numeric'}));
+  let m=s.match(/(?:minuteur|timer).*?(\d+)\s*(seconde|minute|heure|second|hour)/);
+  if(m){const k={seconde:1,second:1,minute:60,heure:3600,hour:3600}[m[2]],v=+m[1],u=m[2]+(v>1?'s':'');
+    setTimeout(()=>{const t=L.tdone(v,u);add('j',t);speak(t)},v*k*1000);return L.tset(v,u)}
+  m=s.match(/(?:combien|what is|what's)\s*(?:font|fait)?\s*([\d\s+\-*/x×÷.,()]+)\??$/);
+  if(m){const e=m[1].replace(/[x×]/g,'*').replace(/÷/g,'/').replace(/,/g,'.');
+    if(/^[\d\s+\-*/.()]+$/.test(e)){try{return L.calc(+Function('return '+e)().toFixed(6)/1)}catch(_){}}}
+  return null;
+}
+
+const EXTRA={fr:"Tu possèdes de vastes connaissances encyclopédiques (sciences, histoire, technique, code, cuisine, droit, santé, culture, etc.). Réponds avec précision et assurance, comme un majordome érudit. Pour les questions complexes, raisonne avant de répondre, mais donne une réponse parlée courte (2 à 4 phrases) ; si l’utilisateur dit « détaille » ou « explique », développe davantage (jusqu’à 8 phrases). Tu n’as pas accès à Internet : pour l’actualité récente, la météo, la bourse ou tout fait qui a pu changer, dis-le franchement. N’invente jamais. Utilise tes outils pour l’heure, les calculs, les minuteurs, l’état de l’appareil et la mémoire (retiens ce que l’utilisateur te demande de retenir).",
+ en:"You have vast encyclopedic knowledge (science, history, engineering, code, cooking, law, health, culture and more). Answer precisely and confidently, like a learned butler. For hard questions, reason first, but give a short spoken answer (2 to 4 sentences); if the user says 'elaborate' or 'explain', go deeper (up to 8 sentences). You have no Internet access: for recent news, weather, markets or anything that may have changed, say so frankly. Never make things up. Use your tools for time, calculations, timers, device status and memory (remember what the user asks you to remember)."};
+let mem=[];try{mem=JSON.parse(store.get('jv_mem')||'[]')}catch(e){}
+const obj=(p,r)=>({type:'object',properties:p||{},required:r||[]});
+const TOOLS=[
+{name:'get_datetime',description:'Current local date and time of the user.',inputSchema:obj(),execute:()=>new Date().toString()},
+{name:'calculate',description:'Evaluate an arithmetic expression (+ - * / % ** and parentheses) and return the result.',inputSchema:obj({expression:{type:'string'}},['expression']),execute:({expression})=>{const e=String(expression).replace(/\^/g,'**').replace(/,/g,'.');if(!/^[\d\s+\-*/.()%]+$/.test(e))throw new Error('invalid expression');return String(Function('"use strict";return ('+e+')')())}},
+{name:'set_timer',description:'Start a countdown timer that alerts the user aloud when finished.',inputSchema:obj({seconds:{type:'number'},label:{type:'string'}},['seconds']),execute:({seconds,label})=>{const s=Math.max(1,Math.min(86400,+seconds||0));setTimeout(()=>{const t=(lang==='fr'?'Monsieur, votre minuteur est terminé : ':'Sir, your timer has finished: ')+(label||s+' s');add('j',t);speak(t)},s*1000);return 'Timer set for '+s+' seconds'}},
+{name:'device_status',description:'Battery level, network status and basic info about the user device.',inputSchema:obj(),execute:async()=>{let b='n/a';try{const x=await navigator.getBattery();b=Math.round(x.level*100)+'%'+(x.charging?' charging':'')}catch(e){}return JSON.stringify({battery:b,online:navigator.onLine,cores:navigator.hardwareConcurrency,language:navigator.language})}},
+{name:'remember',description:'Store a fact about the user, or something they asked to be remembered, for future conversations.',inputSchema:obj({fact:{type:'string'}},['fact']),execute:({fact})=>{mem.push(String(fact).slice(0,300));mem=mem.slice(-30);store.set('jv_mem',JSON.stringify(mem));return 'Remembered'}},
+{name:'forget_everything',description:'Erase all stored memories, only when the user asks.',inputSchema:obj(),execute:()=>{mem=[];store.set('jv_mem','[]');return 'Memory cleared'}}
+];
+async function ask(q){
+  q=q.trim().replace(/^(hey |ok )?jarvis[, ]*/i,'');
+  if(!q||busy)return;
+  add('u',q);busy=true;
+  const im=q.match(/(?:génère|genere|crée|cree|dessine|fais|make|generate|draw|create)\s+(?:moi\s+|me\s+)?(?:une?\s+|an?\s+)?(?:image|photo|illustration|dessin|picture)\s*(?:de |d'|d’|of |:)?\s*(.+)/i);
+  if(im){
+    setS('think','think');const wait=add('j',lang==='fr'?'Génération de l’image…':'Generating the image…');
+    try{const url=await genImage(im[1]);wait.textContent='';const img=new Image();img.src=url;img.style.cssText='max-width:100%;border-radius:8px;display:block';wait.appendChild(img);log.scrollTop=log.scrollHeight;busy=false;return speak(lang==='fr'?'Voici votre image, Monsieur.':'Here is your image, sir.',after)}
+    catch(e){const t=lang==='fr'?'Je n’ai pas pu créer l’image, Monsieur. Les modèles d’image gratuits sont rares et changent souvent.':'I could not create the image, sir. Free image models are rare and change often.';wait.textContent=t+(e&&e.msg?'\n['+e.msg+']':'');busy=false;return speak(t,after)}
+  }
+  let a=local(q);
+  if(a){add('j',a);busy=false;return speak(a,after)}
+  if(!(await getSample())){a=tx().off;add('j',a);busy=false;return speak(a,after)}
+  setS('think','think');
+  hist.push({role:'user',content:q});
+  const h=hist.slice(-20);while(h[0].role!=='user')h.shift();
+  const sys=tx().sys+' '+EXTRA[lang]+(mem.length?(lang==='fr'?'\n\nMémoire de l’utilisateur : ':'\n\nUser memory: ')+mem.join(' ; '):'');
+  const msgs=[{role:'user',content:sys+'\n\n'+h[0].content},...h.slice(1)];
+  const box=add('j','…'),t0=performance.now();
+  try{
+    const r=await Promise.race([sample(msgs,{modelTier:$('exp').classList.contains('on')?'complex':'default',tools:TOOLS,onText:({text})=>{box.textContent=text;log.scrollTop=log.scrollHeight}}),new Promise((_,j)=>setTimeout(()=>j({code:'timeout'}),90000))]);
+    a=r.text;box.textContent=a;hist.push({role:'assistant',content:a});lat=Math.round(performance.now()-t0);nEx++;
+  }catch(e){a=e&&e.code==='http_429'?(lang==='fr'?'La limite gratuite est atteinte, Monsieur. Réessayez dans une minute, ou demain si le quota du jour est épuisé.':'The free limit has been reached, sir. Try again in a minute, or tomorrow if the daily quota is used up.'):tx().err;box.textContent=a+(e&&e.msg?'\n['+e.msg+']':'');hist.pop()}
+  busy=false;speak(a,after);
+}
+const after=()=>{if(conv)setTimeout(listen,300)};
+
+/* Écoute */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+function listen(){
+  if(!SR){add('j',tx().nosr);return}
+  if(listening)return;
+  if(window.speechSynthesis)speechSynthesis.cancel();
+  rec=new SR();rec.lang=tx().loc;rec.interimResults=false;
+  rec.onstart=()=>{listening=true;$('mic').classList.add('on');setS('listen','listen')};
+  rec.onresult=e=>ask(e.results[0][0].transcript);
+  rec.onerror=e=>{conv=false;$('conv').classList.remove('on');const c=e&&e.error;if(c==='not-allowed'||c==='service-not-allowed'){add('j',tx().mic);$('t').focus()}else if(c==='no-speech')add('j',tx().nosp)};
+  rec.onend=()=>{listening=false;$('mic').classList.remove('on');if(!busy&&!(window.speechSynthesis&&speechSynthesis.speaking))setS('','idle')};
+  try{rec.start()}catch(_){}
+}
+hud.onclick=$('mic').onclick=()=>listening?rec.stop():listen();
+$('conv').onclick=()=>{conv=!conv;$('conv').classList.toggle('on',conv);if(conv)listen()};
+$('f').onsubmit=e=>{e.preventDefault();const v=$('t').value;$('t').value='';ask(v)};
+$('gk').value=store.get('jv_ok')||'';
+$('gk').onchange=e=>{store.set('jv_ok',e.target.value.trim());getSample()};
+$('gm').onchange=e=>store.set('jv_gm',e.target.value);
+loadModels();
+if(!store.get('jv_ok'))$('cfg').classList.add('open');
+</script>
+</body>
+</html>
