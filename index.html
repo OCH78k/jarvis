@@ -109,6 +109,9 @@ button.on{background:var(--c);color:#02080e}
 <input id="gk" type="password" placeholder="Clé API OpenRouter" autocomplete="off">
 <select id="gm" title="Modèle gratuit"></select>
 <span style="flex-basis:100%;text-align:center">La clé reste sur votre appareil. Modèles gratuits : 20 demandes/min et 50/jour. Évitez les informations sensibles.</span>
+<input id="xk" type="password" placeholder="Clé API ElevenLabs" autocomplete="off">
+<input id="vid" placeholder="Voice ID ElevenLabs" autocomplete="off">
+<button type="button" id="xt" class="on">Voix ElevenLabs</button>
 <button type="button" id="test">Tester</button>
 </div>
 <form id="f">
@@ -206,7 +209,7 @@ $('lang').onchange=e=>{lang=e.target.value;store.set('jv_lang',lang);loadVoices(
 $('t').placeholder=tx().ph;
 if(store.get('jv_jm')==='0')jarvisMode(false);
 
-function speak(txt,done){
+function speakBrowser(txt,done){
   if(muted){done&&done();return}
   if($('voice').value==='__robot__')return roboSpeak(txt,done);
   roboStop();
@@ -293,10 +296,33 @@ function roboSpeak(txt,done){
   setS('speak','speak');
   RB={osc,lfo,nz,out,tm:setTimeout(()=>{roboStop();setS('','idle');done&&done()},(t-c.currentTime)*1000+250)};
 }
+const GAEL=new Audio();let elFailAt=0;
+function speak(txt,done){
+  if(muted){done&&done();return}
+  if(store.get('jv_xk')&&$('xt').classList.contains('on')&&Date.now()-elFailAt>60000)return speakEL(txt.replace(/[*_#`]/g,'').slice(0,500),done);
+  speakBrowser(txt,done);
+}
+async function speakEL(txt,done){
+  roboStop();if(window.speechSynthesis)speechSynthesis.cancel();
+  const vid=(store.get('jv_vid')||'JdwJ7jL68CWmQZuo7KgG').trim();let le;
+  for(const model of ['eleven_flash_v2_5','eleven_multilingual_v2']){
+    try{
+      const r=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+encodeURIComponent(vid)+'?output_format=mp3_44100_128',{method:'POST',headers:{'xi-api-key':store.get('jv_xk'),'content-type':'application/json'},body:JSON.stringify({text:txt,model_id:model})});
+      if(!r.ok){let m='';try{m=JSON.stringify((await r.json()).detail||'').slice(0,140)}catch(e){}le={code:r.status,msg:r.status+' '+m};if(r.status===400||r.status===404||r.status===422)continue;throw le}
+      GAEL.src=URL.createObjectURL(await r.blob());
+      GAEL.onplay=()=>setS('speak','speak');GAEL.onended=GAEL.onerror=()=>{setS('','idle');done&&done()};
+      await GAEL.play();return;
+    }catch(e){le=e;if(e&&e.code&&!(e.code===400||e.code===404||e.code===422))break}
+  }
+  elFailAt=Date.now();
+  const hint=le&&le.code===401?'clé invalide':le&&le.code===402?'offre payante requise pour cette voix':le&&le.code===429?'quota ou limite atteinte':'erreur';
+  add('j','ElevenLabs : '+hint+((le&&le.msg)?' ['+le.msg+']':'')+'. Voix du navigateur utilisée pendant une minute.');
+  speakBrowser(txt,done);
+}
 /* Démarrage */
 const bootLines=['> NOYAU … OK','> SYNTHÈSE VOCALE … OK','> RÉACTEUR ARC … STABLE','> J.A.R.V.I.S. PRÊT'];let bi=0;
 const bt=setInterval(()=>{$('bl').textContent+=(bi?'\n':'')+bootLines[bi++];if(bi>=bootLines.length)clearInterval(bt)},450);
-$('go').onclick=()=>{$('boot').remove();const g=tx().hi(new Date().getHours());add('j',g);speak(g)};
+$('go').onclick=()=>{GAEL.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';GAEL.play().catch(()=>{});$('boot').remove();const g=tx().hi(new Date().getHours());add('j',g);speak(g)};
 
 /* Cerveau */
 const OB='https://openrouter.ai/api/v1/';
@@ -440,6 +466,9 @@ $('gk').onchange=e=>{store.set('jv_ok',e.target.value.trim());getSample()};
 $('gm').onchange=e=>store.set('jv_gm',e.target.value);
 loadModels();
 if(!store.get('jv_ok'))$('cfg').classList.add('open');
+$('xk').value=store.get('jv_xk')||'';$('xk').onchange=e=>{store.set('jv_xk',e.target.value.trim());elFailAt=0};
+$('vid').value=store.get('jv_vid')||'JdwJ7jL68CWmQZuo7KgG';$('vid').onchange=e=>{store.set('jv_vid',e.target.value.trim());elFailAt=0};
+$('xt').onclick=()=>$('xt').classList.toggle('on');
 </script>
 </body>
 </html>
